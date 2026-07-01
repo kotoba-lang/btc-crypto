@@ -1,0 +1,14 @@
+;; btc-crypto — Bitcoin-specific crypto/encoding for Clojure/babashka.
+;; RIPEMD-160 + Base58Check + Bech32/Bech32m + BIP-32/39/44 + WIF + P2PKH/
+;; P2WPKH addresses + legacy/BIP-143 tx signing. Builds on kotoba-lang's
+;; eth-crypto (secp256k1 EC math — same curve as Bitcoin) and crypto
+;; (SHA-256) rather than re-deriving them.
+{:paths ["src" "resources"]
+ :deps {io.github.kotoba-lang/eth-crypto {:git/sha "eebb35b56c1ddb7987b053bdf0c789c77c22c10f"}
+        io.github.kotoba-lang/crypto     {:git/sha "c4f825c166c0095f7b020c503c56a0a1fb10af07"}}
+ :aliases
+ {:test {:extra-paths ["test"]
+         :extra-deps {io.github.cognitect-labs/test-runner
+                      {:git/tag "v0.5.1" :git/sha "dfb30dd"}}
+         :main-opts ["-m" "cognitect.test-runner"]
+         :exec-fn cognitect.test-runner.api/test}}}
