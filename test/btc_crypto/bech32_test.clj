@@ -23,15 +23,15 @@
 
 (deftest bip173-invalid-vectors
   (testing "invalid checksum"
-    (is (thrown? #?(:clj Exception :cljs js/Error)
+    (is (thrown? Exception
                  (bech/decode-segwit-address "bc1qw508d6qejxtdg4y5r3zarvary0c5xw7kv8f3t5"))))
   (testing "invalid witness version"
-    (is (thrown? #?(:clj Exception :cljs js/Error)
+    (is (thrown? Exception
                  (bech/decode-segwit-address "BC13W508D6QEJXTDG4Y5R3ZARVARY0C5XW7KN40WF2"))))
   (testing "invalid program length"
-    (is (thrown? #?(:clj Exception :cljs js/Error)
+    (is (thrown? Exception
                  (bech/decode-segwit-address "bc1rw5uspcuh"))))
   (testing "mixed case"
-    (is (thrown? #?(:clj Exception :cljs js/Error)
+    (is (thrown? Exception
                  (bech/decode-segwit-address
                   "tb1qrp33g0q5c5txsp9arysrx4k6zdkfs4nce4xj0gdcccefvpysxf3q0sL5k7")))))

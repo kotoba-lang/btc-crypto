@@ -8,11 +8,19 @@
 
   Scope: SIGHASH_ALL only, single scriptCode style (P2PKH / P2WPKH-in-P2PKH-
   shape scriptCode), no P2SH/P2SH-wrapped-segwit/P2TR/multisig. See the ADR's
-  out-of-scope list."
+  out-of-scope list.
+
+  PORTABILITY: :clj-only (wrapped #?(:clj (do ...)) with throwing :cljs
+  stubs of the same names, matching eth-crypto.core's precedent) — its
+  btc-crypto.core dep is itself :clj-only for the same reason."
   (:require [eth-crypto.core :as eth]
             [btc-crypto.core :as btc])
-  #?(:clj (:import (java.io ByteArrayOutputStream)
-                    (java.math BigInteger))))
+  #?(:clj (:import (java.math BigInteger))))
+
+(def sighash-all 0x01)
+
+#?(:clj
+(do
 
 ;; ─── little-endian integer + varint primitives ───────────────────────────────
 
@@ -129,8 +137,6 @@
         body (concat-bytes [rb sb])]
     (concat-bytes [(byte-array [(unchecked-byte 0x30) (unchecked-byte (alength body))]) body])))
 
-(def sighash-all 0x01)
-
 (defn sign-legacy-p2pkh
   "Sign input `input-index` of `tx` spending a P2PKH output, SIGHASH_ALL.
   Returns {:der-sig-with-type bytes :pubkey compressed-pubkey-bytes}."
@@ -152,3 +158,15 @@
         sighash (bip143-sighash tx input-index script-code amount sighash-all)
         sig (eth/secp256k1-sign privkey sighash)]
     {:witness [(concat-bytes [(der-encode-sig sig) (byte-array [(unchecked-byte sighash-all)])]) pubkey]}))
+
+) ;; end do
+:cljs
+(do
+  (defn varint [& _] (throw (ex-info "btc-crypto.tx/varint is :clj-only" {})))
+  (defn p2pkh-script [& _] (throw (ex-info "btc-crypto.tx/p2pkh-script is :clj-only" {})))
+  (defn legacy-sighash [& _] (throw (ex-info "btc-crypto.tx/legacy-sighash is :clj-only" {})))
+  (defn bip143-preimage [& _] (throw (ex-info "btc-crypto.tx/bip143-preimage is :clj-only" {})))
+  (defn bip143-sighash [& _] (throw (ex-info "btc-crypto.tx/bip143-sighash is :clj-only" {})))
+  (defn der-encode-sig [& _] (throw (ex-info "btc-crypto.tx/der-encode-sig is :clj-only (java.math.BigInteger)" {})))
+  (defn sign-legacy-p2pkh [& _] (throw (ex-info "btc-crypto.tx/sign-legacy-p2pkh is :clj-only" {})))
+  (defn sign-p2wpkh [& _] (throw (ex-info "btc-crypto.tx/sign-p2wpkh is :clj-only" {})))))

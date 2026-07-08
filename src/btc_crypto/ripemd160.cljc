@@ -5,8 +5,17 @@
   16 steps, two parallel lines (left/right) that merge into the chaining
   value each 512-bit block. Verified against the reference test vectors
   (empty string, \"abc\", \"message digest\", the alphabet) — see
-  test/btc_crypto/ripemd160_test.cljc."
-  (:import (java.io ByteArrayOutputStream)))
+  test/btc_crypto/ripemd160_test.cljc.
+
+  PORTABILITY: :clj-only (wrapped #?(:clj (do ...)) with a throwing :cljs
+  stub of the same name, matching eth-crypto.core's precedent) — the bit
+  math itself (bit-and/bit-or/bit-xor/bit-shift-left/
+  unsigned-bit-shift-right) is already 32-bit-correct on cljs, but the
+  byte-array/aget/aset-byte/System.arraycopy plumbing around it is
+  JVM-only; porting that too is out of scope for this pass.")
+
+#?(:clj
+(do
 
 (def ^:private MASK 0xFFFFFFFF)
 
@@ -94,3 +103,8 @@
                  (mask32 (+ h3 E A'))
                  (mask32 (+ h4 A B'))
                  (mask32 (+ h0 B C'))))))))
+
+) ;; end do
+:cljs
+(defn ripemd160 [& _]
+  (throw (ex-info "btc-crypto.ripemd160/ripemd160 is :clj-only (JVM byte-array/System.arraycopy math)" {}))))

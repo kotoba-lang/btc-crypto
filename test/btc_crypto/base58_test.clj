@@ -19,4 +19,4 @@
 (deftest checksum-rejected-on-corruption
   (let [encoded (b58/encode-check (byte-array (cons (byte 0) (repeat 20 (byte 1)))))
         corrupted (str (subs encoded 0 (dec (count encoded))) (if (= \1 (last encoded)) "2" "1"))]
-    (is (thrown? #?(:clj Exception :cljs js/Error) (b58/decode-check corrupted)))))
+    (is (thrown? Exception (b58/decode-check corrupted)))))

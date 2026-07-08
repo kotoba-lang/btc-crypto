@@ -7,7 +7,11 @@
   2f5eed53a4727b4bf8880d8f3f199efc90e58503646d9ff8eff3a2ed3b24dbda — checked
   in the ADR guardrails) rather than hand-transcribed, because one wrong word
   in a hand-typed 2048-word list would silently corrupt real recovery
-  phrases. `load-wordlist` re-verifies that checksum at load time."
+  phrases. `load-wordlist` re-verifies that checksum at load time.
+
+  PORTABILITY: :clj-only (wrapped #?(:clj (do ...)) with throwing :cljs
+  stubs of the same names, matching eth-crypto.core's precedent) — needs
+  javax.crypto HMAC, java.text.Normalizer, and java.security.MessageDigest."
   (:require [clojure.string :as str]
             [kotoba.lang.crypto :as kc])
   #?(:clj (:import (javax.crypto Mac)
@@ -19,6 +23,9 @@
   "Expected SHA-256 of the canonical BIP-39 English wordlist (2048 lines,
   bitcoin/bips bip-0039/english.txt)."
   "2f5eed53a4727b4bf8880d8f3f199efc90e58503646d9ff8eff3a2ed3b24dbda")
+
+#?(:clj
+(do
 
 (defn- sha256-hex [^String s]
   (let [md (MessageDigest/getInstance "SHA-256")]
@@ -117,3 +124,11 @@
     (when-not (= given-cs (vec want-cs))
       (throw (ex-info "bip39: checksum mismatch" {})))
     entropy))
+
+) ;; end do
+:cljs
+(do
+  (defn load-wordlist [& _] (throw (ex-info "btc-crypto.bip39/load-wordlist is :clj-only (java.security.MessageDigest)" {})))
+  (defn mnemonic->seed [& _] (throw (ex-info "btc-crypto.bip39/mnemonic->seed is :clj-only (javax.crypto HMAC)" {})))
+  (defn entropy->mnemonic [& _] (throw (ex-info "btc-crypto.bip39/entropy->mnemonic is :clj-only" {})))
+  (defn mnemonic->entropy [& _] (throw (ex-info "btc-crypto.bip39/mnemonic->entropy is :clj-only" {})))))
