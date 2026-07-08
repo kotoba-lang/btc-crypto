@@ -58,13 +58,18 @@
   :compressed? bool}."
   [^String s]
   (let [payload (base58/decode-check s)
-        n (alength payload)
-        version (bit-and (long (aget payload 0)) 0xff)
-        network (some (fn [[k v]] (when (= v version) k)) WIF-VERSION)
-        compressed? (and (= n 34) (= 1 (bit-and (long (aget payload 33)) 0xff)))]
-    (when (nil? network) (throw (ex-info "wif: unknown version byte" {:version version})))
+        n (alength payload)]
+    ;; Length must be validated BEFORE any `aget` on payload -- a
+    ;; Base58Check-valid string can still decode to a too-short (even
+    ;; zero-length) payload, and `aget` on an empty array throws a raw
+    ;; ArrayIndexOutOfBoundsException instead of this fn's own intended
+    ;; ex-info.
     (when-not (contains? #{33 34} n) (throw (ex-info "wif: bad payload length" {:len n})))
-    {:private-key (Arrays/copyOfRange payload 1 33) :network network :compressed? compressed?}))
+    (let [version (bit-and (long (aget payload 0)) 0xff)
+          network (some (fn [[k v]] (when (= v version) k)) WIF-VERSION)
+          compressed? (and (= n 34) (= 1 (bit-and (long (aget payload 33)) 0xff)))]
+      (when (nil? network) (throw (ex-info "wif: unknown version byte" {:version version})))
+      {:private-key (Arrays/copyOfRange payload 1 33) :network network :compressed? compressed?})))
 
 ;; ─── addresses ────────────────────────────────────────────────────────────
 

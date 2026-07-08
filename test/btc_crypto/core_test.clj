@@ -40,3 +40,19 @@
     (is (= (seq privkey-1) (seq (:private-key decoded))))
     (is (= :mainnet (:network decoded)))
     (is (true? (:compressed? decoded)))))
+
+(deftest wif-decode-rejects-too-short-payload-with-ex-info
+  ;; "3QJmnh" is a genuinely Base58Check-valid string (its 4-byte checksum
+  ;; matches SHA256d of an EMPTY payload) that decode-check happily returns
+  ;; a zero-length byte array for. wif-decode's own length guard is meant
+  ;; to catch this ({:len n} not in #{33 34}) -- it must not let a raw
+  ;; ArrayIndexOutOfBoundsException from an unguarded aget on the
+  ;; zero-length payload escape instead.
+  (try
+    (btc/wif-decode "3QJmnh")
+    (is false "expected wif-decode to throw ex-info")
+    (catch clojure.lang.ExceptionInfo e
+      (is (= "wif: bad payload length" (.getMessage e)))
+      (is (= 0 (:len (ex-data e)))))
+    (catch Exception e
+      (is false (str "expected ex-info, got " (.getClass e) ": " (.getMessage e))))))
