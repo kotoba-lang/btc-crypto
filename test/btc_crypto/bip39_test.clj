@@ -42,7 +42,7 @@
       (is (= (seq entropy) (seq (bip39/mnemonic->entropy wordlist mnemonic)))))))
 
 (deftest bad-checksum-rejected
-  (is (thrown? #?(:clj Exception :cljs js/Error)
+  (is (thrown? Exception
                (bip39/mnemonic->entropy
                 wordlist
                 "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon"))))

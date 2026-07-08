@@ -2,13 +2,20 @@
   "Bitcoin address/key encoding: SHA256d, HASH160, WIF, and P2PKH/P2WPKH
   address derivation. Reuses eth-crypto's secp256k1 point arithmetic
   (`private->public` — same curve as Ethereum) for the public-key math, and
-  kotoba.lang.crypto for SHA-256."
+  kotoba.lang.crypto for SHA-256.
+
+  PORTABILITY: :clj-only (wrapped #?(:clj (do ...)) with throwing :cljs
+  stubs of the same names, matching eth-crypto.core's precedent) — its
+  ripemd160/base58 deps are themselves :clj-only for the same reason."
   (:require [eth-crypto.core :as eth]
             [btc-crypto.ripemd160 :as ripemd]
             [btc-crypto.base58 :as base58]
             [btc-crypto.bech32 :as bech32]
             [kotoba.lang.crypto :as kc])
   #?(:clj (:import (java.util Arrays))))
+
+#?(:clj
+(do
 
 (defn sha256d
   "Double SHA-256 (Bitcoin's block-hash / txid / checksum digest)."
@@ -83,3 +90,15 @@
   ([privkey network]
    (let [pubkey (compressed-pubkey privkey)]
      {:p2pkh (p2pkh-address pubkey network) :p2wpkh (p2wpkh-address pubkey network)})))
+
+) ;; end do
+:cljs
+(do
+  (defn sha256d [& _] (throw (ex-info "btc-crypto.core/sha256d is :clj-only" {})))
+  (defn hash160 [& _] (throw (ex-info "btc-crypto.core/hash160 is :clj-only (btc-crypto.ripemd160)" {})))
+  (defn compressed-pubkey [& _] (throw (ex-info "btc-crypto.core/compressed-pubkey is :clj-only" {})))
+  (defn wif-encode [& _] (throw (ex-info "btc-crypto.core/wif-encode is :clj-only (btc-crypto.base58)" {})))
+  (defn wif-decode [& _] (throw (ex-info "btc-crypto.core/wif-decode is :clj-only (btc-crypto.base58)" {})))
+  (defn p2pkh-address [& _] (throw (ex-info "btc-crypto.core/p2pkh-address is :clj-only (btc-crypto.base58)" {})))
+  (defn p2wpkh-address [& _] (throw (ex-info "btc-crypto.core/p2wpkh-address is :clj-only" {})))
+  (defn address-of-privkey [& _] (throw (ex-info "btc-crypto.core/address-of-privkey is :clj-only" {})))))

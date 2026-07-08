@@ -10,7 +10,11 @@
   (-> (bip32/seed->master seed)
       (bip32/derive-path \"m/44'/0'/0'/0/0\"))
   ;=> {:private-key bytes32 :chain-code bytes32 :depth n :parent-fingerprint u32
-       :child-number u32 :hardened? bool}"
+       :child-number u32 :hardened? bool}
+
+  PORTABILITY: :clj-only (wrapped #?(:clj (do ...)) with throwing :cljs
+  stubs of the same names, matching eth-crypto.core's precedent) — needs
+  java.math.BigInteger and javax.crypto HMAC."
   (:require [clojure.string :as str]
             [btc-crypto.core :as btc]
             [btc-crypto.base58 :as base58])
@@ -19,10 +23,13 @@
                     (java.math BigInteger)
                     (java.util Arrays))))
 
+(def hardened-offset 0x80000000)
+
+#?(:clj
+(do
+
 (def ^:private ^BigInteger SECP-N
   (BigInteger. "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141" 16))
-
-(def hardened-offset 0x80000000)
 
 (defn- hmac-sha512 ^bytes [^bytes key ^bytes data]
   (let [mac (Mac/getInstance "HmacSHA512")]
@@ -128,3 +135,11 @@
                                (ser32 parent-fingerprint) (ser32 child-number)
                                chain-code key-data])]
     (base58/encode-check payload)))
+
+) ;; end do
+:cljs
+(do
+  (defn seed->master [& _] (throw (ex-info "btc-crypto.bip32/seed->master is :clj-only (javax.crypto HMAC)" {})))
+  (defn ckd-priv [& _] (throw (ex-info "btc-crypto.bip32/ckd-priv is :clj-only (java.math.BigInteger)" {})))
+  (defn derive-path [& _] (throw (ex-info "btc-crypto.bip32/derive-path is :clj-only (java.math.BigInteger)" {})))
+  (defn serialize [& _] (throw (ex-info "btc-crypto.bip32/serialize is :clj-only (java.math.BigInteger)" {})))))

@@ -1,9 +1,16 @@
 (ns btc-crypto.base58
   "Base58 and Base58Check (Bitcoin's WIF/legacy-address encoding). BigInteger-
   based, mirroring eth-crypto's style of using only java.math.BigInteger for
-  bignum arithmetic (no third-party deps)."
+  bignum arithmetic (no third-party deps).
+
+  PORTABILITY: :clj-only (wrapped #?(:clj (do ...)) with throwing :cljs
+  stubs of the same names, matching eth-crypto.core's precedent) — needs
+  java.math.BigInteger arbitrary-precision arithmetic."
   (:require [kotoba.lang.crypto :as kc])
   #?(:clj (:import (java.math BigInteger))))
+
+#?(:clj
+(do
 
 (def ^:private ALPHABET "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz")
 (def ^:private ALPHABET-IDX (into {} (map-indexed (fn [i c] [c i]) ALPHABET)))
@@ -71,3 +78,11 @@
       (when-not (java.util.Arrays/equals ^bytes given ^bytes want)
         (throw (ex-info "base58check: checksum mismatch" {:s s})))
       payload)))
+
+) ;; end do
+:cljs
+(do
+  (defn encode [& _] (throw (ex-info "btc-crypto.base58/encode is :clj-only (java.math.BigInteger)" {})))
+  (defn decode [& _] (throw (ex-info "btc-crypto.base58/decode is :clj-only (java.math.BigInteger)" {})))
+  (defn encode-check [& _] (throw (ex-info "btc-crypto.base58/encode-check is :clj-only (java.math.BigInteger)" {})))
+  (defn decode-check [& _] (throw (ex-info "btc-crypto.base58/decode-check is :clj-only (java.math.BigInteger)" {})))))
