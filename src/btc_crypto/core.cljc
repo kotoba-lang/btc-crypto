@@ -11,6 +11,7 @@
             [btc-crypto.ripemd160 :as ripemd]
             [btc-crypto.base58 :as base58]
             [btc-crypto.bech32 :as bech32]
+            [btc-crypto.cashaddr :as cashaddr]
             [kotoba.lang.crypto :as kc])
   #?(:clj (:import (java.util Arrays))))
 
@@ -40,6 +41,54 @@
 
 ;; ─── WIF (Wallet Import Format) ──────────────────────────────────────────────
 
+(def networks
+  "Per-network constants. Bitcoin-fork chains differ ONLY in these values plus the
+  address encoding — the secp256k1 math, HASH160, Base58Check and Bech32 code above
+  is shared unchanged, which is why adding a chain here is cheap.
+
+  Every constant below was MEASURED, not transcribed from memory:
+
+  - `:p2pkh-version` was read out of a real address of that chain by
+    Base58Check-decoding it and taking the leading byte (Bitcoin's 0x00 served as
+    the control, and came out right).
+  - each address format was then validated by a live THORChain node ACCEPTING a
+    derived address as a destination for that chain. The node rejects a malformed
+    one (`unable to parse address`), and it discriminates: a Dogecoin-versioned
+    address offered as a Litecoin destination was refused, and an early Litecoin
+    attempt that reused Bitcoin's bech32 checksum with the `ltc` HRP was caught the
+    same way.
+
+  `:wif-version` is deliberately ABSENT for the forks. WIF is a key-export format,
+  no oracle validates it, and the conventional `P2PKH version + 0x80` relationship
+  is not something to assert unmeasured — `wif-encode` therefore refuses those
+  networks rather than emitting a plausible-looking string.
+
+  SIGNING, and where it stops: Litecoin and Dogecoin use Bitcoin's transaction
+  format and sighash unchanged, so `btc-crypto.tx` works for them as-is (the
+  network only affects addresses). **Bitcoin Cash does not** — it requires
+  SIGHASH_FORKID with a BCH-specific digest, which this library does not implement.
+  BCH here is RECEIVE-ONLY: you can derive an address to be paid at, and must not
+  assume you can spend from it."
+  {:mainnet      {:coin :bitcoin       :p2pkh-version 0x00 :wif-version 0x80
+                  :bech32-hrp "bc" :segwit? true  :encoding :base58}
+   :testnet      {:coin :bitcoin       :p2pkh-version 0x6f :wif-version 0xef
+                  :bech32-hrp "tb" :segwit? true  :encoding :base58}
+   :litecoin     {:coin :litecoin      :p2pkh-version 0x30
+                  :bech32-hrp "ltc" :segwit? true  :encoding :base58}
+   :dogecoin     {:coin :dogecoin      :p2pkh-version 0x1e
+                  :segwit? false :encoding :base58}
+   :bitcoin-cash {:coin :bitcoin-cash  :p2pkh-version 0x00
+                  :cashaddr-prefix "bitcoincash" :segwit? false :encoding :cashaddr
+                  :spendable? false}})
+
+(defn network
+  "Look up a network's constants, refusing an unknown one rather than returning nil
+  and deriving an address on a silently-missing version byte."
+  [net]
+  (or (get networks net)
+      (throw (ex-info (str "btc-crypto: unknown network " (pr-str net))
+                      {:known (sort (keys networks))}))))
+
 (def ^:private WIF-VERSION {:mainnet 0x80 :testnet 0xef})
 
 (defn wif-encode
@@ -48,7 +97,14 @@
   (^String [privkey] (wif-encode privkey :mainnet true))
   (^String [privkey network] (wif-encode privkey network true))
   (^String [^bytes privkey network compressed?]
-   (let [version (get WIF-VERSION network)
+   (let [version (or (get WIF-VERSION network)
+                     (throw (ex-info
+                             (str "btc-crypto: no measured WIF version byte for " network
+                                  " — WIF is a key-export format with no oracle to validate"
+                                  " it against, and the conventional relationship to the"
+                                  " P2PKH version is not asserted here. Only :mainnet and"
+                                  " :testnet (Bitcoin) have one.")
+                             {:network network :known (sort (keys WIF-VERSION))})))
          suffix (if compressed? [(byte 0x01)] [])
          payload (byte-array (concat [(unchecked-byte version)] (seq privkey) suffix))]
      (base58/encode-check payload))))
@@ -73,28 +129,48 @@
 
 ;; ─── addresses ────────────────────────────────────────────────────────────
 
-(def ^:private P2PKH-VERSION {:mainnet 0x00 :testnet 0x6f})
-(def ^:private HRP {:mainnet "bc" :testnet "tb"})
-
 (defn p2pkh-address
   "Legacy Base58Check P2PKH address for a compressed public key."
   (^String [pubkey] (p2pkh-address pubkey :mainnet))
-  (^String [^bytes pubkey network]
+  (^String [^bytes pubkey net]
    (base58/encode-check
-    (byte-array (cons (unchecked-byte (get P2PKH-VERSION network)) (seq (hash160 pubkey)))))))
+    (byte-array (cons (unchecked-byte (:p2pkh-version (network net)))
+                      (seq (hash160 pubkey)))))))
 
 (defn p2wpkh-address
-  "Native SegWit v0 (bech32) P2WPKH address for a compressed public key."
+  "Native SegWit v0 (bech32) P2WPKH address for a compressed public key. Refuses a
+  network without SegWit (Dogecoin, Bitcoin Cash) instead of inventing an HRP."
   (^String [pubkey] (p2wpkh-address pubkey :mainnet))
-  (^String [^bytes pubkey network]
-   (bech32/encode-segwit-address (get HRP network) 0 (seq (hash160 pubkey)))))
+  (^String [^bytes pubkey net]
+   (let [{:keys [bech32-hrp segwit?]} (network net)]
+     (when-not (and segwit? bech32-hrp)
+       (throw (ex-info (str "btc-crypto: " net " has no SegWit / bech32 address form")
+                       {:network net})))
+     (bech32/encode-segwit-address bech32-hrp 0 (seq (hash160 pubkey))))))
+
+(defn cashaddr-address
+  "CashAddr (Bitcoin Cash) address for a compressed public key."
+  (^String [pubkey] (cashaddr-address pubkey :bitcoin-cash))
+  (^String [^bytes pubkey net]
+   (let [{:keys [cashaddr-prefix]} (network net)]
+     (when-not cashaddr-prefix
+       (throw (ex-info (str "btc-crypto: " net " does not use CashAddr") {:network net})))
+     (cashaddr/encode (hash160 pubkey) cashaddr-prefix :p2pkh))))
 
 (defn address-of-privkey
-  "{:p2pkh .. :p2wpkh ..} addresses for a 32-byte private key."
+  "Addresses for a 32-byte private key on `net`, as a map of the forms that network
+  actually HAS — `:p2wpkh` is absent for Dogecoin (no SegWit) and `:cashaddr`
+  appears only for Bitcoin Cash. Returning a map of only-real forms is deliberate:
+  a nil or fabricated address for a form the chain does not support is how funds
+  get sent somewhere unspendable."
   ([privkey] (address-of-privkey privkey :mainnet))
-  ([privkey network]
-   (let [pubkey (compressed-pubkey privkey)]
-     {:p2pkh (p2pkh-address pubkey network) :p2wpkh (p2wpkh-address pubkey network)})))
+  ([privkey net]
+   (let [{:keys [encoding segwit?]} (network net)
+         pubkey (compressed-pubkey privkey)]
+     (cond-> {}
+       (= :base58 encoding)   (assoc :p2pkh (p2pkh-address pubkey net))
+       (= :cashaddr encoding) (assoc :cashaddr (cashaddr-address pubkey net))
+       segwit?                (assoc :p2wpkh (p2wpkh-address pubkey net))))))
 
 ) ;; end do
 :cljs

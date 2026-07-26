@@ -60,3 +60,49 @@ phrase を静かに破壊しうる。同梱の `resources/bip39/english.txt` は
 ```
 clojure -M:test
 ```
+
+## Bitcoin-fork networks (Litecoin, Dogecoin, Bitcoin Cash)
+
+Added 2026-07-26 after a market-cap review: these three carry ~5M RUNE of
+THORChain pool depth between them, and the secp256k1 math, HASH160, Base58Check
+and Bech32 code here is shared with Bitcoin unchanged — so a chain is a row of
+constants, not an implementation.
+
+```clojure
+(btc/address-of-privkey privkey :litecoin)
+;=> {:p2pkh "LNf1pU6qC6qQCSYJeRg398wgYXZf5gBWao"
+;    :p2wpkh "ltc1qykjmavvs8r65m88urkkql8rn5vnkkh7n57t387"}
+(btc/address-of-privkey privkey :dogecoin)      ;=> {:p2pkh "D8aA6Wje…"}  (no SegWit)
+(btc/address-of-privkey privkey :bitcoin-cash)  ;=> {:cashaddr "bitcoincash:qqj6t043…"}
+```
+
+`address-of-privkey` returns **only the forms that network actually has** — no
+`:p2wpkh` for Dogecoin, and `p2wpkh-address` throws there rather than inventing an
+HRP. A fabricated address for an unsupported form is how funds reach somewhere
+unspendable.
+
+### None of the constants were transcribed from memory
+
+| what | how it was established |
+|---|---|
+| P2PKH version bytes (LTC `0x30`, DOGE `0x1e`) | Base58Check-**decoded out of real addresses** of those chains. Bitcoin's `0x00` was the control and came out right |
+| every address format | a **live THORChain node accepted** each derived address as a destination for that chain. It rejects malformed ones (`unable to parse address`) and it *discriminates*: a Dogecoin-versioned address offered as Litecoin was refused, and an early Litecoin attempt reusing Bitcoin's bech32 checksum was caught the same way |
+| CashAddr's 5 generator constants | a real BCH address **round-trips**: its checksum verifies here, and re-encoding the hash it decodes to reproduces the address character-for-character. One wrong constant fails that immediately |
+| cross-check | `@scure/base` independently confirms the checksums, and that all forms encode the same hash160 |
+
+**CashAddr is not Bech32.** It shares the charset, which is the trap — the checksum
+is a 40-bit BCH code with its own five generators against Bech32's 30-bit one.
+Reusing Bech32's polymod produces strings that look exactly like valid addresses
+and are not.
+
+### Where this stops, deliberately
+
+- **`wif-encode` refuses the forks.** WIF is a key-export format with no oracle to
+  validate against, and the conventional "P2PKH version + 0x80" relationship is not
+  asserted unmeasured. It throws rather than emitting a plausible-looking string.
+- **Litecoin and Dogecoin are spendable**: they use Bitcoin's transaction format and
+  sighash unchanged, so `btc-crypto.tx` works as-is — the network only affects
+  addresses.
+- **Bitcoin Cash is RECEIVE-ONLY.** It requires `SIGHASH_FORKID` with a BCH-specific
+  digest, which is not implemented. `(:spendable? (btc/network :bitcoin-cash))` is
+  `false`, and that is checked by a test so it cannot quietly become wrong.
