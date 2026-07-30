@@ -4,7 +4,8 @@
 ;; eth-crypto (secp256k1 EC math — same curve as Bitcoin) and crypto
 ;; (SHA-256) rather than re-deriving them.
 {:paths ["src" "resources"]
- :deps {io.github.kotoba-lang/eth-crypto {:git/sha "eebb35b56c1ddb7987b053bdf0c789c77c22c10f"}
+ :deps {io.github.kotoba-lang/eth-crypto {:git/url "https://github.com/kotoba-lang/eth-crypto.git"
+                                         :git/sha "2b0e56d28262eb1b513cee6c822a55714303f39a"}
         io.github.kotoba-lang/crypto     {:git/sha "c4f825c166c0095f7b020c503c56a0a1fb10af07"}}
  :aliases
  {:test {:extra-paths ["test"]

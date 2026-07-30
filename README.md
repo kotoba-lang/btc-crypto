@@ -5,12 +5,13 @@ Bitcoin 固有の暗号プリミティブとエンコーディングを portable
 点演算・RFC 6979 決定論的 ECDSA（Bitcoin も同じ曲線）と
 [kotoba-lang/crypto](https://github.com/kotoba-lang/crypto) の SHA-256 の上に、
 Bitcoin 固有の RIPEMD-160・Base58Check・Bech32/Bech32m・BIP-32/39/44・WIF・
-アドレス導出・tx 署名を追加する。ADR: `90-docs/adr/2607012200-kotoba-lang-btc-mining-wallet-substrate.md`。
+アドレス導出・tx 署名・strict-DER ECDSA 検証を追加する。
+ADR: `90-docs/adr/2607012200-kotoba-lang-btc-mining-wallet-substrate.md`。
 
 すべての公開関数は既知のテストベクタ（BIP-32 Test vector 1、trezor/python-mnemonic
 の BIP-39 vectors.json、BIP-173 の bech32 例、BIP-143 の Native P2WPKH worked
 example、privkey=1 の著名なアドレス/WIF、実際の genesis block header）で
-**byte-for-byte 検証済み**（`clojure -M:test`、55 assertions green）。
+**byte-for-byte 検証済み**（`clojure -M:test`、67 assertions green）。
 
 ## Namespaces
 
@@ -29,6 +30,8 @@ example、privkey=1 の著名なアドレス/WIF、実際の genesis block heade
   同梱、sha256 で読み込み時に検証）が要る
 - `btc-crypto.tx` — legacy P2PKH SIGHASH_ALL と BIP-143 P2WPKH SIGHASH_ALL
   の tx 署名（SIGHASH_ALL のみ、P2SH/multisig/Taproot は対象外）
+- `btc-crypto.signature` — Bitcoin Core互換 strict-DER parser、sighash type、
+  low-S分類、圧縮/非圧縮SEC公開鍵のECDSA verify
 
 ## Quick start
 
