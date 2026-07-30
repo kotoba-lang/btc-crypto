@@ -26,6 +26,9 @@
     (is (signature/verify-der
          digest bitcoin-signature pubkey
          {:low-s? true :defined-sighash? true}))
+    (is (signature/verify-der
+         (vec digest) (vec bitcoin-signature) (vec pubkey)
+         {:low-s? true :defined-sighash? true}))
     (is (false?
          (signature/verify-der
           (assoc (vec digest) 0
