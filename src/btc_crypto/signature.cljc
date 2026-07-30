@@ -95,10 +95,14 @@
   ([digest signature pubkey
     {:keys [low-s? defined-sighash?]
      :or {low-s? false defined-sighash? false}}]
-   (boolean
-    (when-let [{:keys [r s sighash-type]}
-               (parse-strict-der signature)]
-      (and (or (not low-s?) (eth/secp256k1-low-s? s))
-           (or (not defined-sighash?)
-               (defined-sighash-type? sighash-type))
-           (eth/secp256k1-verify digest {:r r :s s} pubkey))))))
+   (let [digest #?(:clj (byte-array (map unchecked-byte digest))
+                   :cljs (vec digest))
+         pubkey #?(:clj (byte-array (map unchecked-byte pubkey))
+                   :cljs (vec pubkey))]
+     (boolean
+      (when-let [{:keys [r s sighash-type]}
+                 (parse-strict-der signature)]
+        (and (or (not low-s?) (eth/secp256k1-low-s? s))
+             (or (not defined-sighash?)
+                 (defined-sighash-type? sighash-type))
+             (eth/secp256k1-verify digest {:r r :s s} pubkey)))))))
