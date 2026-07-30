@@ -43,3 +43,19 @@
                [0x30 0x06 0x02 0x01 0x01 0x02 0x01 0x80 0x01])))
   (is (signature/defined-sighash-type? 0x81))
   (is (false? (signature/defined-sighash-type? 0x04))))
+
+(deftest pre-bip66-lax-der-compatibility
+  (let [digest (btc/sha256d (.getBytes "historical bitcoin" "UTF-8"))
+        signed (eth/secp256k1-sign private-key digest)
+        strict (vec (concat (seq (tx/der-encode-sig signed))
+                            [signature/sighash-all]))
+        wrong-sequence-length (assoc strict 1 0)
+        trailing-before-hash-type
+        (vec (concat (butlast strict) [0] [(peek strict)]))
+        pubkey (btc/compressed-pubkey private-key)]
+    (doseq [lax [wrong-sequence-length trailing-before-hash-type]]
+      (is (false? (signature/strict-der? lax)))
+      (is (signature/parse-lax-der lax))
+      (is (signature/verify-lax-der digest lax pubkey)))
+    (is (nil? (signature/parse-lax-der [])))
+    (is (nil? (signature/parse-lax-der [0x31 0 1])))))
