@@ -90,6 +90,42 @@
            (when (= (.mod (.multiply y y) p) c)
              [x (if (.testBit y 0) (.subtract p y) y)]))))
 
+     (defn- integer->bytes32 [^BigInteger value]
+       (let [encoded (.toByteArray value)
+             encoded (if (> (alength encoded) 32)
+                       (Arrays/copyOfRange
+                        encoded (- (alength encoded) 32)
+                        (alength encoded))
+                       encoded)
+             result (byte-array 32)]
+         (System/arraycopy encoded 0 result
+                           (- 32 (alength encoded)) (alength encoded))
+         (vec (map #(bit-and % 0xff) result))))
+
+     (defn tweak-public-key
+       "Return BIP341's tweaked x-only output key and y parity, or nil."
+       [internal-key merkle-root]
+       (try
+         (let [internal-key
+               (byte-array (map unchecked-byte internal-key))
+               internal-point
+               (when (= 32 (alength internal-key))
+                 (lift-x (BigInteger. 1 internal-key)))
+               tweak
+               (BigInteger.
+                1
+                (byte-array
+                 (map unchecked-byte
+                      (tagged-hash
+                       "TapTweak"
+                       (concat internal-key (or merkle-root []))))))]
+           (when (and internal-point (< (.compareTo tweak n) 0))
+             (let [[x y] (point-add internal-point
+                                    (point-multiply tweak g))]
+               {:x (integer->bytes32 x)
+                :parity (if (.testBit ^BigInteger y 0) 1 0)})))
+         (catch Exception _ nil)))
+
      (defn verify
        "Verify a 64-byte BIP340 signature for a 32-byte message and 32-byte
        x-only public key. Malformed inputs return false."
@@ -137,4 +173,5 @@
    (do
      (defn tagged-hash [& _]
        (throw (ex-info "BIP340 verification is currently JVM-only." {})))
+     (defn tweak-public-key [& _] nil)
      (defn verify [& _] false)))

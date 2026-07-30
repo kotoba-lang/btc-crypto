@@ -22,3 +22,13 @@
     (is (false? (schnorr/verify
                  (assoc message 31 1) public-key signature)))
     (is (false? (schnorr/verify message public-key (pop signature))))))
+
+(deftest official-bip341-key-tweak-vector
+  (is (= {:x
+          (hex-bytes
+           "53a1f6e454df1aa2776a2814a721372d6258050de330b3c6d10ee8f4e0dda343")
+          :parity 1}
+         (schnorr/tweak-public-key
+          (hex-bytes
+           "d6889cb081036e0faefa3a35157ad71086b123b2b144b649798b494c300a961d")
+          nil))))
