@@ -80,6 +80,55 @@
            (subvec signature s-start (+ s-start s-length)))
        :sighash-type (unsigned-byte (peek signature))})))
 
+(defn- read-lax-length [bytes offset]
+  (when (< offset (count bytes))
+    (let [first-byte (unsigned-byte (nth bytes offset))
+          offset (inc offset)]
+      (if (zero? (bit-and first-byte 0x80))
+        [first-byte offset]
+        (let [byte-count (bit-and first-byte 0x7f)
+              end (+ offset byte-count)]
+          (when (<= end (count bytes))
+            (let [length-bytes
+                  (drop-while zero? (subvec bytes offset end))]
+              (when (< (count length-bytes) 8)
+                [(reduce #(+ (* %1 256) (unsigned-byte %2))
+                         0 length-bytes)
+                 end]))))))))
+
+(defn parse-lax-der
+  "Historical OpenSSL-compatible DER parser used before BIP66. Sequence
+  lengths and trailing bytes are intentionally ignored. The final byte remains
+  Bitcoin's sighash type."
+  [signature]
+  (let [signature (vec signature)
+        der (if (seq signature) (pop signature) [])]
+    (try
+      (when (and (seq signature) (= 0x30 (unsigned-byte (nth der 0))))
+        (let [[_ position] (read-lax-length der 1)
+              _ (when-not (= 0x02 (unsigned-byte (nth der position)))
+                  (throw (ex-info "R tag" {})))
+              [r-length r-start] (read-lax-length der (inc position))
+              r-end (+ r-start r-length)
+              _ (when (> r-end (count der))
+                  (throw (ex-info "R length" {})))
+              _ (when-not (= 0x02 (unsigned-byte (nth der r-end)))
+                  (throw (ex-info "S tag" {})))
+              [s-length s-start] (read-lax-length der (inc r-end))
+              s-end (+ s-start s-length)
+              _ (when (> s-end (count der))
+                  (throw (ex-info "S length" {})))
+              r-bytes (vec (drop-while zero?
+                                       (subvec der r-start r-end)))
+              s-bytes (vec (drop-while zero?
+                                       (subvec der s-start s-end)))]
+          (when (and (<= (count r-bytes) 32)
+                     (<= (count s-bytes) 32))
+            {:r (bytes->integer r-bytes)
+             :s (bytes->integer s-bytes)
+             :sighash-type (unsigned-byte (peek signature))})))
+      (catch #?(:clj Exception :cljs :default) _ nil))))
+
 (defn low-s?
   [signature]
   (boolean
@@ -106,3 +155,14 @@
              (or (not defined-sighash?)
                  (defined-sighash-type? sighash-type))
              (eth/secp256k1-verify digest {:r r :s s} pubkey)))))))
+
+(defn verify-lax-der
+  "Verify using Bitcoin's pre-BIP66 lax DER interpretation."
+  [digest signature pubkey]
+  (let [digest #?(:clj (byte-array (map unchecked-byte digest))
+                  :cljs (vec digest))
+        pubkey #?(:clj (byte-array (map unchecked-byte pubkey))
+                  :cljs (vec pubkey))]
+    (boolean
+     (when-let [{:keys [r s]} (parse-lax-der signature)]
+       (eth/secp256k1-verify digest {:r r :s s} pubkey)))))
