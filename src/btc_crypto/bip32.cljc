@@ -15,7 +15,7 @@
   PORTABILITY: :clj-only (wrapped #?(:clj (do ...)) with throwing :cljs
   stubs of the same names, matching eth-crypto.core's precedent) — needs
   java.math.BigInteger and javax.crypto HMAC."
-  (:require [clojure.string :as str]
+  (:require [kotoba.lang.text :as str]
             [btc-crypto.core :as btc]
             [btc-crypto.base58 :as base58])
   #?(:clj (:import (javax.crypto Mac)

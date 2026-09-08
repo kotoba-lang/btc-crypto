@@ -12,7 +12,7 @@
   PORTABILITY: :clj-only (wrapped #?(:clj (do ...)) with throwing :cljs
   stubs of the same names, matching eth-crypto.core's precedent) — needs
   javax.crypto HMAC, java.text.Normalizer, and java.security.MessageDigest."
-  (:require [clojure.string :as str]
+  (:require [kotoba.lang.text :as str]
             [kotoba.lang.crypto :as kc])
   #?(:clj (:import (javax.crypto Mac)
                     (javax.crypto.spec SecretKeySpec)
