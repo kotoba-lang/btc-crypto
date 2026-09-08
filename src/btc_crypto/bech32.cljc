@@ -2,7 +2,7 @@
   "Bech32 (BIP-173, witness v0) and Bech32m (BIP-350, witness v1+/Taproot)
   encoding, plus the segwit address <-> (witver, program) mapping from
   BIP-173's reference pseudocode (segwit_addr.py)."
-  (:require [clojure.string :as str]))
+  (:require [kotoba.lang.text :as str]))
 
 (def ^:private CHARSET "qpzry9x8gf2tvdw0s3jn54khce6mua7l")
 (def ^:private CHARSET-IDX (into {} (map-indexed (fn [i c] [c i]) CHARSET)))
@@ -51,8 +51,8 @@
   "Decode a bech32/bech32m string. Returns {:hrp .. :data [5-bit words, sans
   checksum] :spec :bech32|:bech32m} or throws."
   [^String s]
-  (let [s (if (or (= s (str/lower-case s)) (= s (str/upper-case s)))
-            (str/lower-case s)
+  (let [s (if (or (= s (str/lower s)) (= s (str/upper s)))
+            (str/lower s)
             (throw (ex-info "bech32: mixed case" {:s s})))
         pos (str/last-index-of s "1")]
     (when (or (nil? pos) (< pos 1) (> (+ pos 7) (count s)))

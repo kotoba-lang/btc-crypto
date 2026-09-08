@@ -21,7 +21,7 @@
   (the same hazard documented in eth-crypto.core, where a naive port would have
   silently computed wrong values rather than failing to compile)."
   (:require [btc-crypto.bech32 :as bech32]
-            [clojure.string :as str]))
+            [kotoba.lang.text :as str]))
 
 #?(:clj
 (do
@@ -89,7 +89,7 @@
    (let [[prefix body] (if (str/includes? address ":")
                          (str/split address #":" 2)
                          [default-pref address])
-         body (str/lower-case body)
+         body (str/lower body)
          words (mapv (fn [c]
                        (or (CHARSET-IDX c)
                            (throw (ex-info "cashaddr: character outside the charset"

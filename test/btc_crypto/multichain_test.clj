@@ -12,7 +12,7 @@
   BCH address that a live node accepted, whose checksum verifies under this
   implementation, and which is reproduced character-for-character by decoding it and
   re-encoding the hash. A single wrong generator constant fails that."
-  (:require [clojure.string :as str]
+  (:require [kotoba.lang.text :as str]
             [clojure.test :refer [deftest is testing]]
             [btc-crypto.cashaddr :as cashaddr]
             [btc-crypto.core :as btc]))
