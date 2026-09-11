@@ -11,7 +11,7 @@ ADR: `90-docs/adr/2607012200-kotoba-lang-btc-mining-wallet-substrate.md`。
 すべての公開関数は既知のテストベクタ（BIP-32 Test vector 1、trezor/python-mnemonic
 の BIP-39 vectors.json、BIP-173 の bech32 例、BIP-143 の Native P2WPKH worked
 example、privkey=1 の著名なアドレス/WIF、実際の genesis block header）で
-**byte-for-byte 検証済み**（`clojure -M:test`、67 assertions green）。
+**byte-for-byte 検証済み**（`kbb -M:test`、67 assertions green）。
 
 ## Namespaces
 
@@ -61,7 +61,7 @@ phrase を静かに破壊しうる。同梱の `resources/bip39/english.txt` は
 ## Test
 
 ```
-clojure -M:test
+kbb -M:test
 ```
 
 ## Bitcoin-fork networks (Litecoin, Dogecoin, Bitcoin Cash)
