@@ -1,5 +1,5 @@
 (ns btc-crypto.signature-test
-  (:require [btc-crypto.core :as btc]
+  (:require [kotoba.bytes :as kbytes] [btc-crypto.core :as btc]
             [btc-crypto.signature :as signature]
             [btc-crypto.tx :as tx]
             [kotoba.test :refer [deftest is]]
@@ -11,7 +11,7 @@
         (range 1 33))))
 
 (deftest strict-der-verification-uses-the-shared-curve-implementation
-  (let [digest (btc/sha256d (.getBytes "bitcoin consensus" "UTF-8"))
+  (let [digest (btc/sha256d (kbytes/utf8-bytes "bitcoin consensus"))
         signed (eth/secp256k1-sign private-key digest)
         der (tx/der-encode-sig signed)
         bitcoin-signature
@@ -45,7 +45,7 @@
   (is (false? (signature/defined-sighash-type? 0x04))))
 
 (deftest pre-bip66-lax-der-compatibility
-  (let [digest (btc/sha256d (.getBytes "historical bitcoin" "UTF-8"))
+  (let [digest (btc/sha256d (kbytes/utf8-bytes "historical bitcoin"))
         signed (eth/secp256k1-sign private-key digest)
         strict (vec (concat (seq (tx/der-encode-sig signed))
                             [signature/sighash-all]))
