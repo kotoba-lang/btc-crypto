@@ -13,7 +13,7 @@
   implementation, and which is reproduced character-for-character by decoding it and
   re-encoding the hash. A single wrong generator constant fails that."
   (:require [kotoba.lang.text :as str]
-            [clojure.test :refer [deftest is testing]]
+            [kotoba.test :refer [deftest is testing]]
             [btc-crypto.cashaddr :as cashaddr]
             [btc-crypto.core :as btc]))
 

@@ -3,7 +3,7 @@
   Dobbertin/Bosselaers/Preneel reference implementation, cross-checked here
   against Python's hashlib.new('ripemd160') / openssl dgst -ripemd160.
   If this fails, no address/WIF/BIP-32 code downstream may ship."
-  (:require [clojure.test :refer [deftest is]]
+  (:require [kotoba.test :refer [deftest is]]
             [btc-crypto.ripemd160 :as r]))
 
 (defn- hex [^bytes b] (apply str (map #(format "%02x" (bit-and (long %) 0xff)) b)))

@@ -4,7 +4,7 @@
   m/0H/1/2H/2/1000000000), covering both hardened and normal derivation and
   both xprv and xpub serialization. If this fails, no wallet/mining-pool
   address code downstream may ship."
-  (:require [clojure.test :refer [deftest is]]
+  (:require [kotoba.test :refer [deftest is]]
             [btc-crypto.bip32 :as bip32]))
 
 (defn- hex->bytes [^String s]

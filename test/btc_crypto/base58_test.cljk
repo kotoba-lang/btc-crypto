@@ -1,7 +1,7 @@
 (ns btc-crypto.base58-test
   "VERIFICATION GATE for Base58/Base58Check. Vectors cross-checked against an
   independent Python reference (int.from_bytes + hashlib.sha256)."
-  (:require [clojure.test :refer [deftest is]]
+  (:require [kotoba.test :refer [deftest is]]
             [btc-crypto.base58 :as b58]))
 
 (deftest zero-hash160-p2pkh-vector
