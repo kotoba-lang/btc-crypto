@@ -4,7 +4,7 @@
   the full DER-encoded signature (which also cross-validates that
   eth-crypto's RFC-6979 secp256k1 signer reproduces Bitcoin Core's exact
   deterministic signature for this input)."
-  (:require [clojure.test :refer [deftest is]]
+  (:require [kotoba.test :refer [deftest is]]
             [btc-crypto.core :as btc]
             [btc-crypto.tx :as tx]))
 

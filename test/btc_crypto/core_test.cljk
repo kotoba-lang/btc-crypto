@@ -10,7 +10,7 @@
   reference values for this key). The P2WPKH address for privkey=1 also
   happens to be the BIP-173 example address (bc1qw508d6qejxtdg4y5r3zarvary0c5xw7kv8f3t4) —
   an independent cross-check between two unrelated spec vectors."
-  (:require [clojure.test :refer [deftest is]]
+  (:require [kotoba.test :refer [deftest is]]
             [btc-crypto.core :as btc]))
 
 (defn- hex->bytes [^String s]

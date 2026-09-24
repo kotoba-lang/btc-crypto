@@ -2,7 +2,7 @@
   (:require [btc-crypto.core :as btc]
             [btc-crypto.signature :as signature]
             [btc-crypto.tx :as tx]
-            [clojure.test :refer [deftest is]]
+            [kotoba.test :refer [deftest is]]
             [eth-crypto.core :as eth]))
 
 (def private-key

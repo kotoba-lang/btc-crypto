@@ -3,7 +3,7 @@
   test vectors (github.com/trezor/python-mnemonic vectors.json), passphrase
   \"TREZOR\" per the vector file's convention. Covers 16/20/32-byte entropy
   (12- and 24-word mnemonics)."
-  (:require [clojure.test :refer [deftest is]]
+  (:require [kotoba.test :refer [deftest is]]
             [clojure.java.io :as io]
             [btc-crypto.bip39 :as bip39]))
 

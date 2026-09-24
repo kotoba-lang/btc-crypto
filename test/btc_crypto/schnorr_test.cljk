@@ -1,6 +1,6 @@
 (ns btc-crypto.schnorr-test
   (:require [btc-crypto.schnorr :as schnorr]
-            [clojure.test :refer [deftest is]]))
+            [kotoba.test :refer [deftest is]]))
 
 (defn hex-bytes [value]
   (mapv #(Integer/parseInt (apply str %) 16) (partition 2 value)))

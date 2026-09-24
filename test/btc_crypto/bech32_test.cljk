@@ -1,7 +1,7 @@
 (ns btc-crypto.bech32-test
   "VERIFICATION GATE for Bech32/Bech32m: the official BIP-173 valid segwit
   address + invalid-address vectors, byte-for-byte from the BIP text."
-  (:require [clojure.test :refer [deftest is testing]]
+  (:require [kotoba.test :refer [deftest is testing]]
             [btc-crypto.bech32 :as bech]))
 
 (defn- hex->prog [s] (map #(Integer/parseInt (apply str %) 16) (partition 2 s)))
