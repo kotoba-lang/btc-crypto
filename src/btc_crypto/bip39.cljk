@@ -12,7 +12,7 @@
   PORTABILITY: :clj-only (wrapped #?(:clj (do ...)) with throwing :cljs
   stubs of the same names, matching eth-crypto.core's precedent) — needs
   javax.crypto HMAC, java.text.Normalizer, and java.security.MessageDigest."
-  (:require [kotoba.lang.text :as str]
+  (:require [kotoba.bytes :as kbytes] [kotoba.lang.text :as str]
             [kotoba.lang.crypto :as kc])
   #?(:clj (:import (javax.crypto Mac)
                     (javax.crypto.spec SecretKeySpec)
@@ -29,7 +29,7 @@
 
 (defn- sha256-hex [^String s]
   (let [md (MessageDigest/getInstance "SHA-256")]
-    (apply str (map #(format "%02x" (bit-and (long %) 0xff)) (.digest md (.getBytes s "UTF-8"))))))
+    (apply str (map #(format "%02x" (bit-and (long %) 0xff)) (.digest md (kbytes/utf8-bytes s))))))
 
 (defn load-wordlist
   "Parse `text` (2048 newline-separated words) into an index. Throws if the
@@ -80,8 +80,8 @@
   mnemonic — validation is `mnemonic->entropy`'s job."
   (^bytes [mnemonic] (mnemonic->seed mnemonic ""))
   (^bytes [^String mnemonic ^String passphrase]
-   (pbkdf2-hmac-sha512 (.getBytes (nfkd mnemonic) "UTF-8")
-                       (.getBytes (nfkd (str "mnemonic" passphrase)) "UTF-8")
+   (pbkdf2-hmac-sha512 (kbytes/utf8-bytes (nfkd mnemonic))
+                       (kbytes/utf8-bytes (nfkd (str "mnemonic" passphrase)))
                        2048 64)))
 
 ;; ─── entropy <-> mnemonic (wordlist-dependent) ───────────────────────────────

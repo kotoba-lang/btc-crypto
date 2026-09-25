@@ -12,7 +12,7 @@
   BCH address that a live node accepted, whose checksum verifies under this
   implementation, and which is reproduced character-for-character by decoding it and
   re-encoding the hash. A single wrong generator constant fails that."
-  (:require [kotoba.lang.text :as str]
+  (:require [kotoba.lang.error :as kerror] [kotoba.lang.text :as str]
             [kotoba.test :refer [deftest is testing]]
             [btc-crypto.cashaddr :as cashaddr]
             [btc-crypto.core :as btc]))
@@ -33,7 +33,7 @@
            (is (contains? n :segwit?) "SegWit support must be stated, not inferred")
            (is (some? (:encoding n))))))
      (testing "an unknown network throws rather than deriving on a nil version byte"
-       (is (thrown? clojure.lang.ExceptionInfo (btc/network :monero)))))
+       (is (thrown? kerror/ExceptionInfo (btc/network :monero)))))
 
 (deftest measured-version-bytes
      (testing "read out of real addresses; Bitcoin's 0x00 is the control"
@@ -60,14 +60,14 @@
 (deftest cashaddr-rejects-a-corrupted-address
      (testing "a mistyped address must throw, not silently become a different one"
        ;; flip one character of the known-good address
-       (is (thrown? clojure.lang.ExceptionInfo
+       (is (thrown? kerror/ExceptionInfo
                     (cashaddr/decode "qr95sy3j9xwd2ap32xkykttr4cvcu7as4y0qverfuz")))
-       (is (thrown? clojure.lang.ExceptionInfo
+       (is (thrown? kerror/ExceptionInfo
                     (cashaddr/decode "qr95sy3j9xwd2ap32xkykttr4cvcu7as4y0qverfub")))))
 
 (deftest cashaddr-rejects-non-charset-characters
      (testing "b, i, o and 1 are excluded from the charset to avoid transcription errors"
-       (is (thrown? clojure.lang.ExceptionInfo (cashaddr/decode "qr95sy3j9xwd2ap32xkyk1ttr4cvcu7as4y0qverfuy")))))
+       (is (thrown? kerror/ExceptionInfo (cashaddr/decode "qr95sy3j9xwd2ap32xkyk1ttr4cvcu7as4y0qverfuy")))))
 
 ;; ── addresses per network ──
 
@@ -87,7 +87,7 @@
          (is (str/starts-with? (btc/p2wpkh-address pubkey :litecoin) "ltc1")))
        (testing "Dogecoin: base58 D…, and NO segwit form"
          (is (str/starts-with? (btc/p2pkh-address pubkey :dogecoin) "D"))
-         (is (thrown? clojure.lang.ExceptionInfo (btc/p2wpkh-address pubkey :dogecoin))
+         (is (thrown? kerror/ExceptionInfo (btc/p2wpkh-address pubkey :dogecoin))
              "inventing an HRP for a chain without SegWit sends funds nowhere"))
        (testing "Bitcoin Cash: CashAddr with the bitcoincash prefix"
          (is (str/starts-with? (btc/cashaddr-address pubkey :bitcoin-cash)
@@ -106,8 +106,8 @@
      (let [privkey (hex->bytes "0000000000000000000000000000000000000000000000000000000000000001")]
        (is (string? (btc/wif-encode privkey :mainnet true)))
        (testing "no plausible-looking WIF for a version byte nobody measured"
-         (is (thrown? clojure.lang.ExceptionInfo (btc/wif-encode privkey :litecoin true)))
-         (is (thrown? clojure.lang.ExceptionInfo (btc/wif-encode privkey :dogecoin true))))))
+         (is (thrown? kerror/ExceptionInfo (btc/wif-encode privkey :litecoin true)))
+         (is (thrown? kerror/ExceptionInfo (btc/wif-encode privkey :dogecoin true))))))
 
 (deftest bch-is-documented-as-receive-only
      (testing "BCH needs SIGHASH_FORKID, which this library does not implement"
