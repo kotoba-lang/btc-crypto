@@ -15,7 +15,7 @@
   PORTABILITY: :clj-only (wrapped #?(:clj (do ...)) with throwing :cljs
   stubs of the same names, matching eth-crypto.core's precedent) — needs
   java.math.BigInteger and javax.crypto HMAC."
-  (:require [kotoba.lang.text :as str]
+  (:require [kotoba.bytes :as kbytes] [kotoba.lang.text :as str]
             [btc-crypto.core :as btc]
             [btc-crypto.base58 :as base58])
   #?(:clj (:import (javax.crypto Mac)
@@ -60,7 +60,7 @@
   "Master key + chain code from a BIP-32 seed (typically the 64-byte output
   of BIP-39 mnemonic->seed, but any 16-64 byte seed is valid)."
   [^bytes seed]
-  (let [I (hmac-sha512 (.getBytes "Bitcoin seed" "UTF-8") seed)]
+  (let [I (hmac-sha512 (kbytes/utf8-bytes "Bitcoin seed") seed)]
     {:private-key (Arrays/copyOfRange I 0 32)
      :chain-code (Arrays/copyOfRange I 32 64)
      :depth 0

@@ -2,7 +2,8 @@
   "BIP340 x-only Schnorr verification for Taproot."
   #?(:clj (:import (java.math BigInteger)
                    (java.security MessageDigest)
-                   (java.util Arrays))))
+                   (java.util Arrays)))
+  (:require [kotoba.bytes :as kbytes]))
 
 #?(:clj
    (do
@@ -31,7 +32,7 @@
      (defn tagged-hash
        "BIP340 tagged SHA-256, returned as 32 unsigned byte values."
        [tag message]
-       (let [tag-hash (sha256 (.getBytes ^String tag "UTF-8"))]
+       (let [tag-hash (sha256 (kbytes/utf8-bytes ^String tag))]
          (vec (sha256 (concat tag-hash tag-hash message)))))
 
      (defn- point-add [left right]
